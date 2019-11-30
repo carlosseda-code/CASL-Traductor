@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ES">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <link href='https://fonts.googleapis.com/css?family=Big Shoulders Text' rel='stylesheet'>
+    <link href='https://fonts.googleapis.com/css?family=Barlow Condensed' rel='stylesheet'>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <title>CASL Tradcutor</title>
+</head>
+<style>
+    .nav a{
+color:white !important; 
+transition: .6s ease !important;
+font-size:20px !important;
+font-family:'Big Shoulders Text';
+}
+.nav a:hover{
+border-bottom:5px solid black;
+}
+    </style>
+<body>
+            <nav style="background-color:#3e3535;border-radius:0px;" class="navbar navbar-inverse">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <img style="padding-top:0px;margin-left:0px;width:100px; height:85px;" src="mundo.png" />
+                    <div style="text-align: center; display:inline-block;font-size:40px;color:#ffff;font-family: 'Barlow Condensed';">CASL - Traductor</div>
+                </div>
+                <div class="collapse navbar-collapse" id="myNavbar">
+                    <ul style="padding-right:50px;" class="nav navbar-nav navbar-right">
+                        <ul style="letter-spacing: 4px; padding:20px 0px 0px 0px;" class="nav navbar-nav">
+                            <!-- class="active" -->
+                            <li><a class="nav">Home</a></li>
+                            <li><a class="nav" href="#">About us</a></li>
+                            <li><a class="nav" href="#">Information </a></li>
+                            <li><a class="nav" href="#">Contact</a></li>
+                        </ul>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    <div style="margin-top:-20px; width:100%;">
+        <div style="padding:20px 0px 20px 0px;text-align: center;">
+        <button style="height: 50px; width:40%;font-size: 30px; text-align: center;"type="button" onclick="init()">Start</button>
+        </div>
+<div style="text-align: center;"><canvas id="canvas" style="text-align: center;"></canvas></div>
+<div id="label-container" style="font-size: 60px;text-align: center;"></div>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8/dist/teachablemachine-pose.min.js"></script>
+<script type="text/javascript">
+    
+    const URL = "https://teachablemachine.withgoogle.com/models/76fkezSR/";
+    let model, webcam, ctx, labelContainer, maxPredictions;
+
+    async function init() {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+
+  
+        model = await tmPose.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+
+        // Convenience function to setup a webcam
+        const size = 400;
+        const flip = true; // whether to flip the webcam
+        webcam = new tmPose.Webcam(size, size, flip); // width, height, flip
+        await webcam.setup(); // request access to the webcam
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        // append/get elements to the DOM
+        const canvas = document.getElementById("canvas");
+        canvas.width = size; canvas.height = size;
+        ctx = canvas.getContext("2d");
+        labelContainer = document.getElementById("label-container");
+        for (let i = 0; i < maxPredictions; i++) { // and class labels
+            labelContainer.appendChild(document.createElement("div"));
+        }
+    }
+
+    async function loop(timestamp) {
+        webcam.update(); // update the webcam frame
+        await predict();
+        window.requestAnimationFrame(loop);
+        //document.write(labelContainer);
+    }
+
+    async function predict() {
+        // Prediction #1: run input through posenet
+        // estimatePose can take in an image, video or canvas html element
+        const { pose, posenetOutput } = await model.estimatePose(webcam.canvas);
+        // Prediction 2: run input through teachable machine classification model
+        const prediction = await model.predict(posenetOutput);
+        for (let i = 0; i < maxPredictions; i++) {
+            const classPrediction =
+                prediction[i].className;
+            if(prediction[i].probability.toFixed(2)==1.00)
+            labelContainer.childNodes[1].innerHTML = classPrediction;
+        }
+
+        // finally draw the poses
+        drawPose(pose);
+        //document.write(classPrediction);
+    }
+
+    function drawPose(pose) {
+        if (webcam.canvas) {
+            ctx.drawImage(webcam.canvas, 0, 0);
+            // draw the keypoints and skeleton
+            /*if (pose) {
+                const minPartConfidence = 0.5;
+                tmPose.drawKeypoints(pose.keypoints, minPartConfidence, ctx);
+                tmPose.drawSkeleton(pose.keypoints, minPartConfidence, ctx);
+            }*/
+        }
+    }
+    
+    
+</script>
+    </div>
+</body>
+</html>
